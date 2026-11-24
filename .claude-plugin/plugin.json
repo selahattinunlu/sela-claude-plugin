@@ -1,0 +1,6 @@
+{
+  "name": "sela",
+  "version": "0.1.0",
+  "description": "Selahattin's personal Claude Code tools: handoff, recall, crosscheck, comment, limit band, discuss and record modes",
+  "types": "./types/index.d.ts"
+}

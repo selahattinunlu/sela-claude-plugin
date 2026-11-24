@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Claude yanıtına yorum</title>
+<style>
+  :root { color-scheme: light dark; --bg:#fbfaf7; --fg:#1f1e1c; --muted:#77736b; --line:#e4e0d8; --mark:#ffe58a; --accent:#c2643a; --card:#fff; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#1d1c1a; --fg:#ebe8e2; --muted:#9a958c; --line:#36342f; --mark:#6b5a1c; --card:#262522; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.6 -apple-system, system-ui, sans-serif; display:grid; grid-template-columns: minmax(0,1fr) 340px; height:100vh; }
+  #doc { overflow:auto; padding:40px max(56px, calc((100% - 860px) / 2)); }
+  #doc pre { background:var(--card); border:1px solid var(--line); border-radius:6px; padding:12px; overflow:auto; font-size:13px; }
+  #doc code { font-family: ui-monospace, Menlo, monospace; font-size:.9em; }
+  #doc table { border-collapse:collapse; margin:12px 0; }
+  #doc td, #doc th { border:1px solid var(--line); padding:4px 10px; text-align:left; }
+  #doc blockquote { margin:0; padding-left:14px; border-left:3px solid var(--line); color:var(--muted); }
+  mark { background:var(--mark); color:inherit; border-radius:2px; cursor:pointer; }
+  aside { border-left:1px solid var(--line); padding:20px; overflow:auto; display:flex; flex-direction:column; gap:12px; }
+  h2 { font-size:14px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0; }
+  .item { background:var(--card); border:1px solid var(--line); border-radius:6px; padding:10px; font-size:14px; }
+  .item .q { color:var(--muted); border-left:3px solid var(--mark); padding-left:8px; margin-bottom:6px; white-space:pre-wrap; max-height:4.8em; overflow:hidden; }
+  .item .c { white-space:pre-wrap; }
+  .item button { float:right; }
+  textarea { width:100%; font:inherit; font-size:14px; padding:8px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--fg); resize:vertical; }
+  button { font:inherit; font-size:14px; padding:6px 12px; border-radius:6px; border:1px solid var(--line); background:var(--card); color:var(--fg); cursor:pointer; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .row { display:flex; gap:8px; justify-content:flex-end; }
+  .hint { color:var(--muted); font-size:13px; }
+  #addBtn { position:fixed; display:none; z-index:10; }
+  #pop { position:fixed; display:none; z-index:11; width:340px; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:10px; box-shadow:0 8px 24px rgba(0,0,0,.18); }
+  #done { display:none; grid-column:1/-1; place-self:center; text-align:center; }
+</style>
+</head>
+<body>
+<main id="doc">Yükleniyor…</main>
+<aside id="side">
+  <h2>Yorumlar</h2>
+  <div class="hint">Metinden bir kısım seç, sonra "Yorum ekle"ye bas.</div>
+  <div id="list"></div>
+  <h2>Genel yorum</h2>
+  <textarea id="general" rows="4" placeholder="İsteğe bağlı"></textarea>
+  <div class="row">
+    <button id="cancel">İptal</button>
+    <button id="send" class="primary">Gönder</button>
+  </div>
+  <div class="hint">⌘+Enter ile de gönderebilirsin.</div>
+</aside>
+<div id="done"><h1>Gönderildi</h1><p class="hint">Bu sekmeyi kapatabilirsin.</p></div>
+<button id="addBtn" class="primary">Yorum ekle</button>
+<div id="pop">
+  <textarea id="popText" rows="4" placeholder="Yorumun…"></textarea>
+  <div class="row" style="margin-top:8px">
+    <button id="popCancel">Vazgeç</button>
+    <button id="popSave" class="primary">Kaydet</button>
+  </div>
+</div>
+<script>
+const base = location.pathname;
+const $ = id => document.getElementById(id);
+const doc = $("doc"), list = $("list"), addBtn = $("addBtn"), pop = $("pop"), popText = $("popText");
+let comments = [], pending = null, nextId = 1;
+
+const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const inline = s => esc(s)
+  .replace(/`([^`]+)`/g, "<code>$1</code>")
+  .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+  .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+
+function render(md) {
+  const lines = md.split("\n"), out = [];
+  let i = 0;
+  while (i < lines.length) {
+    const l = lines[i];
+    if (/^```/.test(l)) {
+      const buf = []; i++;
+      while (i < lines.length && !/^```/.test(lines[i])) buf.push(lines[i++]);
+      i++; out.push("<pre><code>" + esc(buf.join("\n")) + "</code></pre>"); continue;
+    }
+    let m;
+    if ((m = l.match(/^(#{1,6})\s+(.*)/))) { out.push(`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`); i++; continue; }
+    if (/^\s*\|/.test(l)) {
+      const rows = [];
+      while (i < lines.length && /^\s*\|/.test(lines[i])) rows.push(lines[i++]);
+      const cells = r => r.trim().replace(/^\||\|$/g, "").split("|").map(c => inline(c.trim()));
+      out.push("<table>" + rows.filter(r => !/^\s*\|[\s:|-]+\|\s*$/.test(r))
+        .map((r, k) => "<tr>" + cells(r).map(c => k ? `<td>${c}</td>` : `<th>${c}</th>`).join("") + "</tr>").join("") + "</table>");
+      continue;
+    }
+    if (/^\s*([-*]|\d+\.)\s+/.test(l)) {
+      const ordered = /^\s*\d+\./.test(l), items = [];
+      while (i < lines.length && /^\s*([-*]|\d+\.)\s+/.test(lines[i])) items.push(lines[i++].replace(/^\s*([-*]|\d+\.)\s+/, ""));
+      const tag = ordered ? "ol" : "ul";
+      out.push(`<${tag}>` + items.map(t => `<li>${inline(t)}</li>`).join("") + `</${tag}>`); continue;
+    }
+    if (/^>\s?/.test(l)) {
+      const buf = [];
+      while (i < lines.length && /^>\s?/.test(lines[i])) buf.push(lines[i++].replace(/^>\s?/, ""));
+      out.push("<blockquote>" + inline(buf.join(" ")) + "</blockquote>"); continue;
+    }
+    if (!l.trim()) { i++; continue; }
+    const buf = [];
+    while (i < lines.length && lines[i].trim() && !/^(```|#{1,6}\s|>|\s*\||\s*([-*]|\d+\.)\s)/.test(lines[i])) buf.push(lines[i++]);
+    out.push("<p>" + inline(buf.join(" ")) + "</p>");
+  }
+  return out.join("\n");
+}
+
+function highlight(range, id) {
+  const walker = document.createTreeWalker(range.commonAncestorContainer, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  if (range.commonAncestorContainer.nodeType === 3) nodes.push(range.commonAncestorContainer);
+  while (walker.nextNode()) if (range.intersectsNode(walker.currentNode)) nodes.push(walker.currentNode);
+  for (let node of nodes) {
+    const start = node === range.startContainer ? range.startOffset : 0;
+    const end = node === range.endContainer ? range.endOffset : node.length;
+    if (end <= start) continue;
+    if (end < node.length) node.splitText(end);
+    if (start > 0) node = node.splitText(start);
+    const mark = document.createElement("mark");
+    mark.dataset.id = id;
+    node.parentNode.insertBefore(mark, node);
+    mark.appendChild(node);
+  }
+}
+
+function unhighlight(id) {
+  document.querySelectorAll(`mark[data-id="${id}"]`).forEach(m => { m.replaceWith(...m.childNodes); });
+  doc.normalize();
+}
+
+function drawList() {
+  list.innerHTML = "";
+  comments.forEach((c, n) => {
+    const el = document.createElement("div");
+    el.className = "item";
+    el.innerHTML = `<button title="Sil">✕</button><div class="q"></div><div class="c"></div>`;
+    el.querySelector(".q").textContent = c.quote;
+    el.querySelector(".c").textContent = `${n + 1}. ${c.comment}`;
+    el.querySelector("button").onclick = () => { unhighlight(c.id); comments = comments.filter(x => x !== c); drawList(); };
+    list.appendChild(el);
+  });
+}
+
+function hidePop() { pop.style.display = "none"; pending = null; }
+
+doc.addEventListener("mouseup", () => {
+  setTimeout(() => {
+    const sel = getSelection();
+    const text = sel.toString().trim();
+    if (!text || !doc.contains(sel.anchorNode)) { addBtn.style.display = "none"; return; }
+    const r = sel.getRangeAt(0).getBoundingClientRect();
+    addBtn.style.left = Math.min(r.right, innerWidth - 480) + "px";
+    addBtn.style.top = (r.bottom + 6) + "px";
+    addBtn.style.display = "block";
+  });
+});
+addBtn.addEventListener("mousedown", e => e.preventDefault());
+addBtn.onclick = () => {
+  const sel = getSelection();
+  pending = { range: sel.getRangeAt(0).cloneRange(), quote: sel.toString().trim() };
+  const r = pending.range.getBoundingClientRect();
+  pop.style.left = Math.min(r.left, innerWidth - 700) + "px";
+  pop.style.top = Math.min(r.bottom + 6, innerHeight - 160) + "px";
+  pop.style.display = "block";
+  addBtn.style.display = "none";
+  popText.value = ""; popText.focus();
+};
+$("popCancel").onclick = hidePop;
+$("popSave").onclick = () => {
+  const comment = popText.value.trim();
+  if (!pending || !comment) return;
+  const id = nextId++;
+  comments.push({ id, quote: pending.quote, comment });
+  highlight(pending.range, id);
+  getSelection().removeAllRanges();
+  hidePop(); drawList();
+};
+popText.addEventListener("keydown", e => {
+  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); e.stopPropagation(); $("popSave").click(); }
+  if (e.key === "Escape") hidePop();
+});
+
+async function finish(path, body) {
+  await fetch(base + path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  doc.style.display = "none"; $("side").style.display = "none"; $("done").style.display = "block";
+  if (path === "cancel") $("done").querySelector("h1").textContent = "İptal edildi";
+}
+$("send").onclick = () => finish("submit", { comments: comments.map(({ quote, comment }) => ({ quote, comment })), general: $("general").value });
+$("cancel").onclick = () => finish("cancel", {});
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && pop.style.display !== "block") $("send").click();
+});
+
+fetch(base + "data").then(r => r.json()).then(d => { doc.innerHTML = render(d.text); });
+</script>
+</body>
+</html>
