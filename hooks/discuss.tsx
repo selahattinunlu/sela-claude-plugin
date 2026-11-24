@@ -17,11 +17,11 @@ export async function toggleDiscuss($: EngineInterface) {
   await update($, isOn, () => now)
   return now
     ? {
-        text: 'Tartışma modu açık. Claude dosya değiştirmeyecek.',
+        text: 'Discussion mode on. Claude will not change files.',
         context: [`${REASON} Until it is turned off, only discuss, read and answer.`],
       }
     : {
-        text: 'Tartışma modu kapalı.',
+        text: 'Discussion mode off.',
         context: ['Discussion mode is off. You may change files again when the user asks.'],
       }
 }
@@ -45,7 +45,7 @@ export async function discussRow($: EngineInterface, e: RenderInput<'AbovePrompt
   const { Box, Text } = $.ui.resolve(e)
   return (
     <Box key="discuss">
-      <Text color="cyan">Tartışma modu açık · dosya değişikliği kapalı · /sela-discuss ile kapat</Text>
+      <Text color="cyan">Discussion mode on · file changes off · /sela-discuss to turn off</Text>
     </Box>
   )
 }

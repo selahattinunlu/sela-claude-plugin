@@ -1,6 +1,6 @@
-# sela — personal Claude Code plugin
+# sela — a Claude Code plugin
 
-Private tools for daily Claude Code work.
+Small tools I use every day with Claude Code: hand off work to a fresh session, search old sessions, re-check findings, comment on answers, see usage limits, and more.
 
 ## What is inside
 
@@ -18,18 +18,23 @@ Private tools for daily Claude Code work.
 
 ## Install
 
-On this Mac (reads the folder directly, edits apply after `/reload-plugins`):
-
-```
-claude plugin marketplace add ~/code/sela/sela-claude-plugin
-claude plugin install sela@sela
-```
-
-On another computer (needs GitHub access to this private repo):
-
 ```
 claude plugin marketplace add selahattinunlu/sela-claude-plugin
 claude plugin install sela@sela
 ```
 
-`/sela:uninstall` works on macOS only. Everything else works on macOS, Linux and Windows.
+To work on the plugin from a local clone (edits apply after `/reload-plugins`):
+
+```
+claude plugin marketplace add /path/to/sela-claude-plugin
+claude plugin install sela@sela
+```
+
+## Requirements
+
+- `/sela:recall` and `/sela:comment` need `python3`.
+- `/sela:uninstall` works on macOS only. Everything else works on macOS, Linux and Windows.
+
+## License
+
+[MIT](LICENSE)

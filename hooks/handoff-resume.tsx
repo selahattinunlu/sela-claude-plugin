@@ -35,13 +35,13 @@ function resumePrompt(handoff: Handoff) {
   const files = handoff.hasPlan
     ? `.notes/${handoff.folder}/PLAN.md and .notes/${handoff.folder}/HANDOFF.md`
     : `.notes/${handoff.folder}/HANDOFF.md`
-  return `Read ${files}. Summarize the current state and what you plan to do from "Next step", then wait for my OK before you change anything. Reply to me in Turkish.`
+  return `Read ${files}. Summarize the current state and what you plan to do from "Next step", then wait for my OK before you change anything.`
 }
 
 function ageText(hours: number) {
-  if (hours < 1) return `${Math.max(1, Math.round(hours * 60))} dk önce`
-  if (hours <= MAX_AGE_HOURS) return `${Math.round(hours)} sa önce`
-  return `${Math.round(hours / 24)} gün önce`
+  if (hours < 1) return `${Math.max(1, Math.round(hours * 60))} min ago`
+  if (hours <= MAX_AGE_HOURS) return `${Math.round(hours)} h ago`
+  return `${Math.round(hours / 24)} d ago`
 }
 
 export async function onSessionStart($: EngineInterface, source: string) {
@@ -61,8 +61,8 @@ export async function showHandoffs($: EngineInterface) {
   return {
     text:
       found.length > 0
-        ? `${found.length} handoff bulundu, prompt'un üstünden seç.`
-        : '.notes içinde handoff yok.',
+        ? `Found ${found.length} handoff(s). Pick one above the prompt.`
+        : 'No handoffs in .notes.',
   }
 }
 
@@ -75,7 +75,7 @@ export async function closeOffer($: EngineInterface, command?: string) {
 export async function checkContext($: EngineInterface, percent: number) {
   if (percent >= CONTEXT_TOAST_PERCENT && !(await read($, isContextToasted))) {
     await update($, isContextToasted, () => true)
-    $.ui.toast(`Context %${Math.round(percent)} doldu · handoff zamanı (/sela:handoff)`)
+    $.ui.toast(`Context ${Math.round(percent)}% full · time to hand off (/sela:handoff)`)
   }
 }
 
@@ -90,23 +90,23 @@ export async function handoffRow($: EngineInterface, e: RenderInput<'AbovePrompt
   const { Box, Button, Text } = $.ui.resolve(e)
   const isOpen = await read($, isListOpen)
   const shown = isOpen ? handoffs : handoffs.slice(0, MAX_SHOWN)
-  const hide = <Button key="hide" label="Gizle" onPress={() => update($, offer, () => null)} />
+  const hide = <Button key="hide" label="Hide" onPress={() => update($, offer, () => null)} />
   const showAll =
     shown.length < handoffs.length ? (
-      <Button key="all" label={`Tümü (${handoffs.length})`} onPress={() => update($, isListOpen, () => true)} />
+      <Button key="all" label={`All (${handoffs.length})`} onPress={() => update($, isListOpen, () => true)} />
     ) : null
 
   return (
     <Box key="handoff" flexDirection="column" rowGap="xs">
       <Box>
-        <Text color="green">{isOpen ? "Handoff'lar (en yeniden en eskiye): " : 'Devam edilebilir: '}</Text>
+        <Text color="green">{isOpen ? "Handoffs (newest first): " : 'Continue: '}</Text>
         {showAll}
         {showAll ? <Text> </Text> : null}
         {hide}
       </Box>
       {shown.map(handoff => (
         <Box key={handoff.folder}>
-          <Button key={`resume-${handoff.folder}`} label="Devam et" onPress={() => resume($, handoff)} />
+          <Button key={`resume-${handoff.folder}`} label="Resume" onPress={() => resume($, handoff)} />
           <Text> .notes/{handoff.folder} </Text>
           <Text dimColor>({ageText(handoff.ageHours)})</Text>
         </Box>

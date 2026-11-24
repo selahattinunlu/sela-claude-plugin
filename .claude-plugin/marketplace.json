@@ -1,6 +1,6 @@
 {
   "name": "sela",
-  "description": "Selahattin's personal Claude Code plugin",
+  "description": "Claude Code tools: handoff, recall, crosscheck, comment, limit band, discuss and record modes",
   "owner": { "name": "Selahattin Ünlü" },
   "plugins": [
     { "name": "sela", "source": "./", "description": "Handoff, recall, crosscheck, comment, limit band, discuss and record modes" }

@@ -20,11 +20,11 @@ export const register: Register = (on, options) => {
     await saveLimits($, (await $.session.usage()).rateLimits)
     await $.command.register({
       name: DISCUSS_COMMAND,
-      description: 'Tartışma modunu aç/kapat: Claude konuşur ve okur, dosya değiştirmez',
+      description: 'Turn discussion mode on/off: Claude reads and talks, does not change files',
     })
     await $.command.register({
       name: RESUME_COMMAND,
-      description: '.notes içindeki handoff listesini göster',
+      description: 'Show the handoffs in .notes',
     })
     await recordOnStart($)
     return next(e)

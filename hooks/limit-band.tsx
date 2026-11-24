@@ -6,10 +6,10 @@ import type { Limit } from '../types'
 const limits = atom({ plugin: 'sela', key: 'limits' } as const, [] as Limit[])
 
 const THRESHOLDS = [50, 80]
-const DAYS = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt']
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 const label = (kind: string) =>
-  kind === 'five_hour' ? '5s' : kind === 'seven_day' ? 'hafta' : kind
+  kind === 'five_hour' ? '5h' : kind === 'seven_day' ? 'week' : kind
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
@@ -36,7 +36,7 @@ export async function saveLimits($: EngineInterface, next: Limit[]) {
     const hit = THRESHOLDS.filter(t => l.percentUsed >= t && t > done).pop()
     if (hit) {
       await $.store.set(key, hit)
-      $.ui.toast(`${label(l.kind)} limitinin %${Math.round(l.percentUsed)}'i kullanıldı`)
+      $.ui.toast(`${Math.round(l.percentUsed)}% of the ${label(l.kind)} limit used`)
     }
   }
 }
@@ -55,7 +55,7 @@ export async function limitRow($: EngineInterface, e: RenderInput<'AbovePrompt'>
           dimColor={!color(l.percentUsed, e.surface)}
         >
           {i > 0 ? ' · ' : ''}
-          {label(l.kind)} %{Math.round(l.percentUsed)}
+          {label(l.kind)} {Math.round(l.percentUsed)}%
           {resetText(l.kind, l.resetsAt)}
         </Text>
       ))}

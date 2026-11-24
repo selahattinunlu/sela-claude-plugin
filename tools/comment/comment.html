@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Claude yanıtına yorum</title>
+<title>Comment on Claude's response</title>
 <style>
   :root { color-scheme: light dark; --bg:#fbfaf7; --fg:#1f1e1c; --muted:#77736b; --line:#e4e0d8; --mark:#ffe58a; --accent:#c2643a; --card:#fff; }
   @media (prefers-color-scheme: dark) { :root { --bg:#1d1c1a; --fg:#ebe8e2; --muted:#9a958c; --line:#36342f; --mark:#6b5a1c; --card:#262522; } }
@@ -32,26 +32,26 @@
 </style>
 </head>
 <body>
-<main id="doc">Yükleniyor…</main>
+<main id="doc">Loading…</main>
 <aside id="side">
-  <h2>Yorumlar</h2>
-  <div class="hint">Metinden bir kısım seç, sonra "Yorum ekle"ye bas.</div>
+  <h2>Comments</h2>
+  <div class="hint">Select part of the text, then press "Add comment".</div>
   <div id="list"></div>
-  <h2>Genel yorum</h2>
-  <textarea id="general" rows="4" placeholder="İsteğe bağlı"></textarea>
+  <h2>General comment</h2>
+  <textarea id="general" rows="4" placeholder="Optional"></textarea>
   <div class="row">
-    <button id="cancel">İptal</button>
-    <button id="send" class="primary">Gönder</button>
+    <button id="cancel">Cancel</button>
+    <button id="send" class="primary">Send</button>
   </div>
-  <div class="hint">⌘+Enter ile de gönderebilirsin.</div>
+  <div class="hint">You can also send with ⌘/Ctrl+Enter.</div>
 </aside>
-<div id="done"><h1>Gönderildi</h1><p class="hint">Bu sekmeyi kapatabilirsin.</p></div>
-<button id="addBtn" class="primary">Yorum ekle</button>
+<div id="done"><h1>Sent</h1><p class="hint">You can close this tab.</p></div>
+<button id="addBtn" class="primary">Add comment</button>
 <div id="pop">
-  <textarea id="popText" rows="4" placeholder="Yorumun…"></textarea>
+  <textarea id="popText" rows="4" placeholder="Your comment…"></textarea>
   <div class="row" style="margin-top:8px">
-    <button id="popCancel">Vazgeç</button>
-    <button id="popSave" class="primary">Kaydet</button>
+    <button id="popCancel">Cancel</button>
+    <button id="popSave" class="primary">Save</button>
   </div>
 </div>
 <script>
@@ -133,7 +133,7 @@ function drawList() {
   comments.forEach((c, n) => {
     const el = document.createElement("div");
     el.className = "item";
-    el.innerHTML = `<button title="Sil">✕</button><div class="q"></div><div class="c"></div>`;
+    el.innerHTML = `<button title="Delete">✕</button><div class="q"></div><div class="c"></div>`;
     el.querySelector(".q").textContent = c.quote;
     el.querySelector(".c").textContent = `${n + 1}. ${c.comment}`;
     el.querySelector("button").onclick = () => { unhighlight(c.id); comments = comments.filter(x => x !== c); drawList(); };
@@ -183,7 +183,7 @@ popText.addEventListener("keydown", e => {
 async function finish(path, body) {
   await fetch(base + path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   doc.style.display = "none"; $("side").style.display = "none"; $("done").style.display = "block";
-  if (path === "cancel") $("done").querySelector("h1").textContent = "İptal edildi";
+  if (path === "cancel") $("done").querySelector("h1").textContent = "Cancelled";
 }
 $("send").onclick = () => finish("submit", { comments: comments.map(({ quote, comment }) => ({ quote, comment })), general: $("general").value });
 $("cancel").onclick = () => finish("cancel", {});

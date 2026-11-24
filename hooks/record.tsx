@@ -11,7 +11,7 @@ export async function recordOnStart($: EngineInterface) {
     description: 'Hide emails, money and private data on screen (for recording)',
     argumentHint: 'on|off',
   })
-  $.ui.status((await read($, isOn)) ? '● REC (gizli mod)' : undefined)
+  $.ui.status((await read($, isOn)) ? '● REC (private data hidden)' : undefined)
 }
 
 export const registerRecord: Register = on => {
@@ -19,13 +19,13 @@ export const registerRecord: Register = on => {
     const arg = e.args.trim().toLowerCase()
     if (arg !== 'on' && arg !== 'off') {
       const now = await read($, isOn)
-      return { text: `Kullanım: /sela-record on|off (şu an: ${now ? 'on' : 'off'})` }
+      return { text: `Usage: /sela-record on|off (now: ${now ? 'on' : 'off'})` }
     }
     const value = arg === 'on'
     await update($, isOn, () => value)
-    $.ui.status(value ? '● REC (gizli mod)' : undefined)
+    $.ui.status(value ? '● REC (private data hidden)' : undefined)
 
-    return { text: value ? 'Kayıt modu açık: özel bilgiler gizleniyor.' : 'Kayıt modu kapalı.' }
+    return { text: value ? 'Record mode on: private data is hidden.' : 'Record mode off.' }
   })
 
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) =>

@@ -1,6 +1,8 @@
 {
   "name": "sela",
   "version": "0.1.0",
-  "description": "Selahattin's personal Claude Code tools: handoff, recall, crosscheck, comment, limit band, discuss and record modes",
+  "description": "Claude Code tools: handoff, recall, crosscheck, comment, limit band, discuss and record modes",
+  "author": { "name": "Selahattin Ünlü" },
+  "license": "MIT",
   "types": "./types/index.d.ts"
 }

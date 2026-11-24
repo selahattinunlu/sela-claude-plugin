@@ -1,5 +1,5 @@
 ---
-description: Son yanıtı tarayıcıda aç, bir kısmını seçip yorum yaz
+description: Open the last response in the browser, select parts of it and comment
 allowed-tools: Bash(python3 -I ${CLAUDE_PLUGIN_ROOT}/tools/comment/comment.py)
 ---
 Do not write any text first. Run this command right away with the Bash tool, with `timeout: 600000` and not in the background:
